@@ -3,7 +3,7 @@ use termion::{
     input::TermRead,
     raw::IntoRawMode,
     screen::AlternateScreen,
-    color,
+    color::{self, Color},
     clear,
     style, cursor,
     async_stdin,
@@ -12,6 +12,7 @@ use std::{
     io::{Write, stdout, stdin},
     error::Error,
     thread::{sleep, spawn}, time::Duration,
+    cmp::max,
 };
 use tui::{
     backend::{Backend, TermionBackend},
@@ -22,13 +23,15 @@ use tui::{
 };
 
 struct App {
-    number: u16,
+    min: u16,
+    sec: u16,
 }
 
 impl App {
     fn new() -> App {
         App {
-            number: 0,
+            min: 0,
+            sec: 0,
         }
     }
 }
@@ -69,8 +72,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), B
             _ => {}
         }
         sleep(Duration::from_millis(1000));
-        app.number += 1;
-        if app.number == 10 { app.number = 0; }
+        if app.sec == 59 && app.min == 59 { continue; }
+        else if app.sec == 59 {
+            app.sec = 0;
+            app.min += 1;
+        } else {
+            app.sec += 1;
+        }
     }
     // write!(stdout, "{}{}{}{}", clear::All, style::Reset, cursor::Goto(1, 1), cursor::Show).unwrap();
     Ok(())
@@ -79,30 +87,66 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), B
 fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let size = f.size();
 
-    let number = {
-        match app.number {
-            0 => ZERO,
-            1 => FIRST,
-            2 => SECOND,
-            3 => THREE,
-            4 => FOUR,
-            5 => FIVE,
-            6 => SIX,
-            7 => SEVEN,
-            8 => EIGHT,
-            9 => NINE,
-            _ => ZERO,
-        }
-    };
-
     let mut stdout = stdout().into_raw_mode().unwrap();
-    write!(&mut stdout, "{}{}{}", style::Reset, cursor::Goto(1, 1), cursor::Hide).unwrap();
-    for i in 0..5 {
-        for j in 0..3 {
-            if number[i][j] == 1 {
-                write!(stdout, "{}{}  {}", cursor::Goto(size.width as u16 / 2 - 3 + 2 * j as u16, size.height as u16 / 2 - 2 + i as u16), color::Bg(color::White), style::Reset).unwrap();
-            } else {
-                write!(stdout, "{}  {}", cursor::Goto(size.width as u16 / 2 - 3 + 2 * j as u16, size.height as u16 / 2 - 2 + i as u16), style::Reset).unwrap();
+    write!(&mut stdout, "{}{}", style::Reset, cursor::Hide).unwrap();
+    let center_width = size.width / 2;
+    let center_height = size.height / 2 - 2;
+    write!(stdout, 
+        "{}{} {}", 
+        cursor::Goto(center_width, center_height+1),
+        color::Bg(color::White),
+        style::Reset
+    ).unwrap();
+    write!(stdout, 
+        "{}{} {}", 
+        cursor::Goto(center_width, center_height+3),
+        color::Bg(color::White),
+        style::Reset
+    ).unwrap();
+
+    let mut num: [u16; 4] = [0, 0, 0, 0];
+    num[0] = app.min / 10;
+    num[1] = app.min % 10;
+    num[2] = app.sec / 10;
+    num[3] = app.sec % 10;
+
+    for k in 0..4 {
+        let mut start_pos = center_width as i32 + 7 * (k as i32 - 2);
+        if k > 1 { start_pos += 2; }
+        let start_pos = max(0, start_pos) as u16;
+
+
+        let number = {
+            match num[k as usize] {
+                0 => ZERO,
+                1 => FIRST,
+                2 => SECOND,
+                3 => THREE,
+                4 => FOUR,
+                5 => FIVE,
+                6 => SIX,
+                7 => SEVEN,
+                8 => EIGHT,
+                9 => NINE,
+                _ => ZERO,
+            }
+        };
+        
+        for i in 0..5 {
+            for j in 0..3 {
+                if number[i][j] == 1 {
+                    write!(stdout, 
+                        "{}{}  {}", 
+                        cursor::Goto(start_pos+2*j as u16, center_height+i as u16), 
+                            color::Bg(color::White), style::Reset
+                        ).unwrap();
+                } else {
+                    write!(stdout,
+                        "{}  {}",
+                        cursor::Goto(start_pos+2*j as u16, center_height+i as u16),
+                        style::Reset
+                        ).unwrap();
+                }
             }
         }
     }
