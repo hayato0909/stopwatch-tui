@@ -53,47 +53,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let app = App::new();
     run_app(&mut terminal, app)?;
     Ok(())
-/* 
-    let three = [[1, 1, 1], [0, 0, 1], [1, 1, 1], [0, 0, 1], [1, 1, 1]];
-    let eight = [[1, 1, 1], [1, 0, 1], [1, 1, 1], [1, 0, 1], [1, 1, 1]];
-
-    let stdin = stdin();
-    let mut stdout = stdout().into_raw_mode()?;
-
-    write!(&mut stdout, "{}{}{}{}", clear::All, style::Reset, cursor::Goto(1, 1), cursor::Hide)?;
-    for i in 0..5 {
-        for j in 0..3 {
-            if three[i][j] == 1 {
-                write!(stdout, "{}  {}", color::Bg(color::White), style::Reset)?;
-            } else {
-                write!(stdout, "  {}", style::Reset)?;
-            }
-        }
-        write!(stdout, "\n\r")?;
-    }
-
-    for i in 0..5 as u16 {
-        for j in 0..3 as u16 {
-            if eight[i as usize][j as usize] == 1 {
-                write!(stdout, "{}{}  {}", termion::cursor::Goto(SECOND_NUMBER+j*2, i+1), color::Bg(color::White), style::Reset)?;
-            } else {
-                write!(stdout, "{}  {}", termion::cursor::Goto(SECOND_NUMBER+j*2, i+1), style::Reset)?;
-            }
-        }
-    }
-
-    stdout.flush()?;
-
-    for c in stdin.keys() {
-        match c.unwrap() {
-            Key::Char('q') => break,
-            _ => {}
-        }
-    }
-
-    write!(stdout, "{}{}{}{}", clear::All, style::Reset, cursor::Goto(1, 1), cursor::Show).unwrap();
-    Ok(())
-    */
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), Box<dyn Error>> {
