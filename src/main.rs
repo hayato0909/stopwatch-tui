@@ -25,6 +25,7 @@ use tui::{
 struct App {
     min: u16,
     sec: u16,
+    is_count: bool,
 }
 
 impl App {
@@ -32,7 +33,13 @@ impl App {
         App {
             min: 0,
             sec: 0,
+            is_count: false,
         }
+    }
+
+    fn reset(&mut self) {
+        self.min = 0;
+        self.sec = 0;
     }
 }
 
@@ -61,23 +68,28 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), Box<dyn Error>> {
     let mut stdin = async_stdin().keys();
     loop {
+        if app.is_count {
+            sleep(Duration::from_millis(1000));
+            if app.sec == 59 && app.min == 59 { continue; }
+            else if app.sec == 59 {
+                app.sec = 0;
+                app.min += 1;
+            } else {
+                app.sec += 1;
+            }
+        }
+
         terminal.draw(|f| ui(f, &mut app))?;
         match stdin.next() {
             Some(Ok(key)) => {
                 match key {
                     Key::Char('q') => break,
+                    Key::Char('s') => { app.is_count = !app.is_count; }
+                    Key::Char('r') => { app.reset(); }
                     _ => {}
                 }
             }
             _ => {}
-        }
-        sleep(Duration::from_millis(1000));
-        if app.sec == 59 && app.min == 59 { continue; }
-        else if app.sec == 59 {
-            app.sec = 0;
-            app.min += 1;
-        } else {
-            app.sec += 1;
         }
     }
     // write!(stdout, "{}{}{}{}", clear::All, style::Reset, cursor::Goto(1, 1), cursor::Show).unwrap();
