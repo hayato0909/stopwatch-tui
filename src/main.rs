@@ -11,7 +11,8 @@ use termion::{
 use std::{
     io::{Write, stdout, stdin},
     error::Error,
-    thread::{sleep, spawn}, time::Duration,
+    thread::{sleep, spawn},
+    time::{Duration, Instant},
     cmp::max,
 };
 use tui::{
@@ -67,9 +68,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), Box<dyn Error>> {
     let mut stdin = async_stdin().keys();
+    let mut res = 0;
+    let mut count = Instant::now();
     loop {
-        if app.is_count {
-            sleep(Duration::from_millis(1000));
+        let diff = count.elapsed();
+        // println!("{}", diff.subsec_nanos());
+        if app.is_count && (diff.as_secs() == 1 || diff.subsec_micros() + res >= 1_000_000)  {
             if app.sec == 59 && app.min == 59 { continue; }
             else if app.sec == 59 {
                 app.sec = 0;
@@ -77,6 +81,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), B
             } else {
                 app.sec += 1;
             }
+            res = 0;
+            count = Instant::now();
         }
 
         terminal.draw(|f| ui(f, &mut app))?;
@@ -84,7 +90,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), B
             Some(Ok(key)) => {
                 match key {
                     Key::Char('q') => break,
-                    Key::Char('s') => { app.is_count = !app.is_count; }
+                    Key::Char('s') => { 
+                        app.is_count = !app.is_count;
+                        if !app.is_count {
+                            res += count.elapsed().subsec_micros();
+                        } else {
+                            count = Instant::now();
+                        }
+                    }
                     Key::Char('r') => { app.reset(); }
                     _ => {}
                 }
