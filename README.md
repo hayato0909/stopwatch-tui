@@ -3,7 +3,7 @@
 ## 使い方
 ```
 git clone https://github.com/hayato0909/stopwatch-tui
-cd tetrust
+cd stopwtach-tui
 cargo run
 ```
 
